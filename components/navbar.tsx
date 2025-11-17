@@ -55,7 +55,7 @@ const Navbar = ({
     { title: "Google Drive Lite", url: "/drive-lite" },
     { title: "Food Review", url: "/food-review" },
     { title: "Pokemon Review", url: "/pokemon" },
-    { title: "Todo Markups", url: "/" },
+    { title: "Notes Markdowns", url: "/notes" },
   ],
   auth = {
     login: { title: "Login", url: "/" },
