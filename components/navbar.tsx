@@ -53,6 +53,9 @@ const Navbar = ({
     { title: "Home", url: "/" },
     { title: "Todo List", url: "/todolist" },
     { title: "Google Drive Lite", url: "/drive-lite" },
+    { title: "Food Review", url: "/food-review" },
+    { title: "Pokemon Review", url: "/pokemon" },
+    { title: "Todo Markups", url: "/" },
   ],
   auth = {
     login: { title: "Login", url: "/" },
