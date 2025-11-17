@@ -52,6 +52,7 @@ const Navbar = ({
   menu = [
     { title: "Home", url: "/" },
     { title: "Todo List", url: "/todolist" },
+    { title: "Google Drive Lite", url: "/drive-lite" },
   ],
   auth = {
     login: { title: "Login", url: "/" },

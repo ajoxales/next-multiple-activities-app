@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Todo {
   id: string;
@@ -129,10 +130,9 @@ export default function TodosPage() {
       <ul className="space-y-2">
         {todos.map((todo) => (
           <li key={todo.id} className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={todo.completed}
-              onChange={() => toggleTodo(todo.id, todo.completed)}
+              onCheckedChange={() => toggleTodo(todo.id, todo.completed)}
             />
 
             {editingId === todo.id ? (
