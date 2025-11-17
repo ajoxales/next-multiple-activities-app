@@ -1,0 +1,166 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+interface Todo {
+  id: string;
+  user_id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+}
+
+export default function TodosPage() {
+  const supabase = createClient();
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [title, setTitle] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+
+  // FETCH TODOS ON LOAD
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("todos")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at");
+
+    if (error) console.log(error);
+    else setTodos(data);
+  };
+
+  // CREATE TODO
+  const addTodo = async () => {
+    if (!title.trim()) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from("todos")
+      .insert({
+        title,
+        user_id: user?.id,
+      })
+      .select()
+      .single();
+
+    if (error) console.error(error);
+
+    setTodos((prev) => [...prev, data]);
+    setTitle("");
+  };
+
+  // TOGGLE COMPLETE
+  const toggleTodo = async (id: string, completed: boolean) => {
+    const { error } = await supabase
+      .from("todos")
+      .update({ completed: !completed })
+      .eq("id", id);
+
+    if (error) console.error(error);
+
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, completed: !completed } : t))
+    );
+  };
+
+  // START EDIT MODE
+  const startEditing = (todo: Todo) => {
+    setEditingId(todo.id);
+    setEditingText(todo.title);
+  };
+
+  // SAVE EDIT
+  const saveEdit = async (id: string) => {
+    const { error } = await supabase
+      .from("todos")
+      .update({ title: editingText })
+      .eq("id", id);
+
+    if (error) console.error(error);
+
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, title: editingText } : t))
+    );
+
+    setEditingId(null);
+    setEditingText("");
+  };
+
+  // DELETE TODO
+  const deleteTodo = async (id: string) => {
+    const { error } = await supabase.from("todos").delete().eq("id", id);
+
+    if (error) console.error(error);
+
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Todos</h1>
+
+      {/* CREATE */}
+      <div className="flex gap-2 mb-4">
+        <Input
+          placeholder="Add todo..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <Button onClick={addTodo}>Add</Button>
+      </div>
+
+      {/* LIST */}
+      <ul className="space-y-2">
+        {todos.map((todo) => (
+          <li key={todo.id} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id, todo.completed)}
+            />
+
+            {editingId === todo.id ? (
+              <>
+                <Input
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={() => saveEdit(todo.id)}>Save</Button>
+              </>
+            ) : (
+              <>
+                <span
+                  className={`${todo.completed ? "line-through" : ""} flex-1`}
+                >
+                  {todo.title}
+                </span>
+                <Button onClick={() => startEditing(todo)}>Edit</Button>
+              </>
+            )}
+
+            <Button variant="destructive" onClick={() => deleteTodo(todo.id)}>
+              Delete
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

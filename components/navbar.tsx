@@ -49,7 +49,10 @@ interface Navbar1Props {
 }
 
 const Navbar = ({
-  menu = [{ title: "Home", url: "/" }],
+  menu = [
+    { title: "Home", url: "/" },
+    { title: "Todo List", url: "/todolist" },
+  ],
   auth = {
     login: { title: "Login", url: "/" },
     signup: { title: "Sign up", url: "/signup" },
