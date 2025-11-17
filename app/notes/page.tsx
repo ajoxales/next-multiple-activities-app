@@ -24,7 +24,6 @@ export default function NotesPage() {
   const [editingContent, setEditingContent] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
 
-  // Fetch notes
   useEffect(() => {
     fetchNotes();
   }, []);
@@ -41,7 +40,6 @@ export default function NotesPage() {
     setNotes(data);
   };
 
-  // Create note
   const addNote = async () => {
     if (!title.trim() || !content.trim()) return;
 
@@ -70,7 +68,6 @@ export default function NotesPage() {
     setContent("");
   };
 
-  // Edit note
   const startEdit = (note: Note) => {
     setEditingId(note.id);
     setEditingTitle(note.title);
@@ -103,7 +100,6 @@ export default function NotesPage() {
     setEditingContent("");
   };
 
-  // Delete note
   const deleteNote = async (id: string) => {
     const { error } = await supabase.from("notes").delete().eq("id", id);
     if (error) {
@@ -117,7 +113,6 @@ export default function NotesPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Markdown Notes App</h1>
 
-      {/* Create Note */}
       <div className="flex flex-col gap-2 mb-4">
         <Input
           placeholder="Title"
@@ -133,7 +128,6 @@ export default function NotesPage() {
         <Button onClick={addNote}>Add Note</Button>
       </div>
 
-      {/* Notes List */}
       <ul className="flex flex-col gap-4">
         {notes.map((note) => (
           <li key={note.id} className="border p-2 rounded">

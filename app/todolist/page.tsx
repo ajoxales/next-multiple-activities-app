@@ -21,7 +21,6 @@ export default function TodosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
 
-  // FETCH TODOS ON LOAD
   useEffect(() => {
     fetchTodos();
   }, []);
@@ -43,7 +42,6 @@ export default function TodosPage() {
     else setTodos(data);
   };
 
-  // CREATE TODO
   const addTodo = async () => {
     if (!title.trim()) return;
 
@@ -66,7 +64,6 @@ export default function TodosPage() {
     setTitle("");
   };
 
-  // TOGGLE COMPLETE
   const toggleTodo = async (id: string, completed: boolean) => {
     const { error } = await supabase
       .from("todos")
@@ -80,13 +77,11 @@ export default function TodosPage() {
     );
   };
 
-  // START EDIT MODE
   const startEditing = (todo: Todo) => {
     setEditingId(todo.id);
     setEditingText(todo.title);
   };
 
-  // SAVE EDIT
   const saveEdit = async (id: string) => {
     const { error } = await supabase
       .from("todos")
@@ -103,7 +98,6 @@ export default function TodosPage() {
     setEditingText("");
   };
 
-  // DELETE TODO
   const deleteTodo = async (id: string) => {
     const { error } = await supabase.from("todos").delete().eq("id", id);
 
@@ -116,7 +110,6 @@ export default function TodosPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Todos</h1>
 
-      {/* CREATE */}
       <div className="flex gap-2 mb-4">
         <Input
           placeholder="Add todo..."
@@ -126,7 +119,6 @@ export default function TodosPage() {
         <Button onClick={addTodo}>Add</Button>
       </div>
 
-      {/* LIST */}
       <ul className="space-y-2">
         {todos.map((todo) => (
           <li key={todo.id} className="flex items-center gap-2">

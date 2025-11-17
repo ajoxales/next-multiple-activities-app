@@ -24,7 +24,7 @@ interface Pokemon {
   image_path: string;
   user_id: string;
   created_at: string;
-  uploaderEmail?: string; // mapped from profiles
+  uploaderEmail?: string;
 }
 
 interface Review {
@@ -33,7 +33,7 @@ interface Review {
   user_id: string;
   content: string;
   created_at: string;
-  userEmail?: string; // mapped from profiles
+  userEmail?: string;
 }
 
 export default function PokemonPage() {
@@ -52,9 +52,6 @@ export default function PokemonPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [pokemonName, setPokemonName] = useState("");
 
-  // ----------------
-  // Fetch all Pokémon + map uploader email
-  // ----------------
   useEffect(() => {
     fetchPokemons();
   }, []);
@@ -66,7 +63,7 @@ export default function PokemonPage() {
       .order("created_at", { ascending: false });
 
     if (pokemonError) {
-      console.error("Error fetching Pokémon:", pokemonError);
+      console.error("Error fetching Pokemon:", pokemonError);
       return;
     }
 
@@ -91,9 +88,6 @@ export default function PokemonPage() {
     setPokemons(mapped);
   };
 
-  // ----------------
-  // Fetch reviews + map reviewer email
-  // ----------------
   const fetchReviews = async (pokemonId: string) => {
     const { data: reviewsData, error } = await supabase
       .from("pokemon_reviews")
@@ -132,9 +126,6 @@ export default function PokemonPage() {
     fetchReviews(pokemon.id);
   };
 
-  // ----------------
-  // Upload Pokémon
-  // ----------------
   const uploadPokemon = async () => {
     if (!uploadFile || !pokemonName.trim()) return;
 
@@ -162,7 +153,7 @@ export default function PokemonPage() {
       .single();
 
     if (error) {
-      console.error("Insert Pokémon error:", error);
+      console.error("Insert Pokemon error:", error);
       return;
     }
 
@@ -171,9 +162,6 @@ export default function PokemonPage() {
     setPokemonName("");
   };
 
-  // ----------------
-  // Add/Edit/Delete Review
-  // ----------------
   const addReview = async () => {
     if (!newReview.trim() || !selectedPokemon) return;
 
@@ -240,9 +228,6 @@ export default function PokemonPage() {
     setReviews((prev) => prev.filter((r) => r.id !== review.id));
   };
 
-  // ----------------
-  // Filter + Sort Pokémon
-  // ----------------
   const filteredPokemons = pokemons
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -254,9 +239,8 @@ export default function PokemonPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Pokémon Review App</h1>
+      <h1 className="text-2xl font-bold mb-4">Pokemon Review App</h1>
 
-      {/* Upload Pokémon */}
       <div className="flex gap-2 mb-4">
         <Input
           type="file"
@@ -264,17 +248,16 @@ export default function PokemonPage() {
           onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
         />
         <Input
-          placeholder="Pokémon name"
+          placeholder="Pokemon name"
           value={pokemonName}
           onChange={(e) => setPokemonName(e.target.value)}
         />
-        <Button onClick={uploadPokemon}>Upload Pokémon</Button>
+        <Button onClick={uploadPokemon}>Upload Pokemon</Button>
       </div>
 
-      {/* Search + Sort */}
       <div className="flex gap-2 mb-4">
         <Input
-          placeholder="Search Pokémon..."
+          placeholder="Search Pokemon..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -289,13 +272,12 @@ export default function PokemonPage() {
         </Select>
       </div>
 
-      {/* Pokémon Grid */}
       <ul className="grid grid-cols-3 gap-4">
         {filteredPokemons.map((pokemon) => (
           <li
             key={pokemon.id}
             className="border rounded overflow-hidden cursor-pointer"
-            style={{ height: "200px" }} // increased height
+            style={{ height: "200px" }}
           >
             <Dialog>
               <DialogTrigger asChild>
@@ -333,7 +315,6 @@ export default function PokemonPage() {
                   className="h-48 w-full object-contain mb-4 rounded"
                 />
 
-                {/* Reviews */}
                 <div className="flex flex-col gap-2 mb-4">
                   {reviews.map((review) => (
                     <div
@@ -379,7 +360,6 @@ export default function PokemonPage() {
                   ))}
                 </div>
 
-                {/* Add review */}
                 <div className="flex gap-2">
                   <Input
                     placeholder="Add a review..."

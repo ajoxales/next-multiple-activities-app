@@ -31,7 +31,6 @@ export default function PhotosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
 
-  // Fetch photos on mount
   useEffect(() => {
     fetchPhotos();
   }, []);
@@ -50,12 +49,11 @@ export default function PhotosPage() {
 
     if (error) console.error(error);
     else {
-      // Generate signed URLs for private bucket
       const photosWithUrl = await Promise.all(
         data.map(async (photo: Photo) => {
           const { data: urlData, error } = await supabase.storage
             .from("photos")
-            .createSignedUrl(photo.file_path, 60); // URL valid for 60 seconds
+            .createSignedUrl(photo.file_path, 60);
           if (error) console.error(error);
           return { ...photo, url: urlData?.signedUrl };
         })
@@ -64,7 +62,6 @@ export default function PhotosPage() {
     }
   };
 
-  // Upload photo
   const uploadPhoto = async () => {
     if (!file || !photoName.trim()) return;
 
@@ -91,7 +88,6 @@ export default function PhotosPage() {
 
     if (error) return console.error(error);
 
-    // Generate signed URL for the new photo
     const { data: urlData, error: urlError } = await supabase.storage
       .from("photos")
       .createSignedUrl(filePath, 60);
@@ -102,7 +98,6 @@ export default function PhotosPage() {
     setPhotoName("");
   };
 
-  // Delete photo
   const deletePhoto = async (photo: Photo) => {
     const { error: storageError } = await supabase.storage
       .from("photos")
@@ -118,13 +113,11 @@ export default function PhotosPage() {
     setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
   };
 
-  // Start editing
   const startEditing = (photo: Photo) => {
     setEditingId(photo.id);
     setEditingText(photo.name);
   };
 
-  // Save edit
   const saveEdit = async (photo: Photo) => {
     const { error } = await supabase
       .from("photos")
@@ -139,7 +132,6 @@ export default function PhotosPage() {
     setEditingText("");
   };
 
-  // Filter + Sort
   const filteredPhotos = photos
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -153,7 +145,6 @@ export default function PhotosPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">My Photos</h1>
 
-      {/* Upload Section */}
       <div className="flex gap-2 mb-4">
         <Input
           type="file"
@@ -168,7 +159,6 @@ export default function PhotosPage() {
         <Button onClick={uploadPhoto}>Upload</Button>
       </div>
 
-      {/* Search + Sort */}
       <div className="flex gap-2 mb-4">
         <Input
           placeholder="Search by name..."
@@ -186,7 +176,6 @@ export default function PhotosPage() {
         </Select>
       </div>
 
-      {/* Photo List */}
       <ul className="grid grid-cols-3 gap-4">
         {filteredPhotos.map((photo) => (
           <li key={photo.id} className="border p-2 rounded flex flex-col gap-2">

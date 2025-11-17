@@ -52,9 +52,6 @@ export default function FoodPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [foodName, setFoodName] = useState("");
 
-  // ----------------
-  // Fetch all foods + map uploader email
-  // ----------------
   useEffect(() => {
     fetchFoods();
   }, []);
@@ -91,9 +88,6 @@ export default function FoodPage() {
     setFoods(mapped);
   };
 
-  // ----------------
-  // Fetch reviews + map reviewer email
-  // ----------------
   const fetchReviews = async (foodId: string) => {
     const { data: reviewsData, error } = await supabase
       .from("food_reviews")
@@ -132,9 +126,6 @@ export default function FoodPage() {
     fetchReviews(food.id);
   };
 
-  // ----------------
-  // Upload food
-  // ----------------
   const uploadFood = async () => {
     if (!uploadFile || !foodName.trim()) return;
 
@@ -173,9 +164,6 @@ export default function FoodPage() {
     setFoodName("");
   };
 
-  // ----------------
-  // Add/Edit/Delete Review
-  // ----------------
   const addReview = async () => {
     if (!newReview.trim() || !selectedFood) return;
 
@@ -242,9 +230,6 @@ export default function FoodPage() {
     setReviews((prev) => prev.filter((r) => r.id !== review.id));
   };
 
-  // ----------------
-  // Filter + Sort
-  // ----------------
   const filteredFoods = foods
     .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
@@ -258,7 +243,6 @@ export default function FoodPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Food Review App</h1>
 
-      {/* Upload Food */}
       <div className="flex gap-2 mb-4">
         <Input
           type="file"
@@ -273,7 +257,6 @@ export default function FoodPage() {
         <Button onClick={uploadFood}>Upload Food</Button>
       </div>
 
-      {/* Search + Sort */}
       <div className="flex gap-2 mb-4">
         <Input
           placeholder="Search Food..."
@@ -291,7 +274,6 @@ export default function FoodPage() {
         </Select>
       </div>
 
-      {/* Food Grid */}
       <ul className="grid grid-cols-3 gap-4">
         {filteredFoods.map((food) => (
           <li
@@ -334,7 +316,6 @@ export default function FoodPage() {
                   className="h-48 w-full object-contain mb-4 rounded"
                 />
 
-                {/* Reviews */}
                 <div className="flex flex-col gap-2 mb-4">
                   {reviews.map((review) => (
                     <div
@@ -380,7 +361,6 @@ export default function FoodPage() {
                   ))}
                 </div>
 
-                {/* Add review */}
                 <div className="flex gap-2">
                   <Input
                     placeholder="Add a review..."
