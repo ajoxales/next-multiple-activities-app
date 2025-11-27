@@ -5,6 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Todo {
   id: string;
@@ -12,6 +22,7 @@ interface Todo {
   title: string;
   completed: boolean;
   created_at: string;
+  priority: string;
 }
 
 export default function TodosPage() {
@@ -20,6 +31,8 @@ export default function TodosPage() {
   const [title, setTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [editingPriority, setEditingPriority] = useState("");
+  const [priority, setPriority] = useState("low");
 
   useEffect(() => {
     fetchTodos();
@@ -54,6 +67,7 @@ export default function TodosPage() {
       .insert({
         title,
         user_id: user?.id,
+        priority: priority,
       })
       .select()
       .single();
@@ -80,22 +94,28 @@ export default function TodosPage() {
   const startEditing = (todo: Todo) => {
     setEditingId(todo.id);
     setEditingText(todo.title);
+    setEditingPriority(todo.priority);
   };
 
   const saveEdit = async (id: string) => {
     const { error } = await supabase
       .from("todos")
-      .update({ title: editingText })
+      .update({ title: editingText, priority: editingPriority })
       .eq("id", id);
 
     if (error) console.error(error);
 
     setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, title: editingText } : t))
+      prev.map((t) =>
+        t.id === id
+          ? { ...t, title: editingText, priority: editingPriority }
+          : t
+      )
     );
 
     setEditingId(null);
     setEditingText("");
+    setEditingPriority("");
   };
 
   const deleteTodo = async (id: string) => {
@@ -116,6 +136,19 @@ export default function TodosPage() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+        <Select onValueChange={(value) => setPriority(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select a priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Priority</SelectLabel>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Button onClick={addTodo}>Add</Button>
       </div>
 
@@ -128,28 +161,53 @@ export default function TodosPage() {
             />
 
             {editingId === todo.id ? (
-              <>
+              <div className="flex-1 flex items-center gap-2">
                 <Input
                   value={editingText}
                   onChange={(e) => setEditingText(e.target.value)}
                   className="flex-1"
                 />
+                <Select
+                  value={editingPriority}
+                  onValueChange={(value) => setEditingPriority(value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select a priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Priority</SelectLabel>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <Button onClick={() => saveEdit(todo.id)}>Save</Button>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="flex-1 flex justify-between items-center">
                 <span
                   className={`${todo.completed ? "line-through" : ""} flex-1`}
                 >
                   {todo.title}
                 </span>
-                <Button onClick={() => startEditing(todo)}>Edit</Button>
-              </>
+                <span className="mx-5 inline-flex items-center px-3 py-0.5 rounded-full bg-gray-200 text-xs font-medium uppercase">
+                  {todo.priority}
+                </span>
+                <div>
+                  <Button onClick={() => startEditing(todo)} className="mr-2">
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteTodo(todo.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
             )}
-
-            <Button variant="destructive" onClick={() => deleteTodo(todo.id)}>
-              Delete
-            </Button>
           </li>
         ))}
       </ul>
