@@ -9,9 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { ToastProvider } from "@/components/providers/toast-provider";
 
 export const metadata = {
-  title: "Activity Hub -Your personal dashboard & activity center",
-  description: "Your personal dashboard & activity center",
-  generator: "v0.app",
+  title: "Activity Hub - Your Personal Dashboard & Activity Center",
+  description: "Your Personal Dashboard & Activity Center",
   icons: {
     icon: [
       { url: "/icon-light-32x32.png", media: "(prefers-color-scheme: light)" },
