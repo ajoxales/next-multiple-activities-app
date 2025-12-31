@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createClient } from "@/lib/supabase/client";
 
 interface Photo {
   id: string;
@@ -39,7 +41,10 @@ export default function PhotosPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to view photos.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("photos")
@@ -47,34 +52,50 @@ export default function PhotosPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) console.error(error);
-    else {
-      const photosWithUrl = await Promise.all(
-        data.map(async (photo: Photo) => {
-          const { data: urlData, error } = await supabase.storage
-            .from("photos")
-            .createSignedUrl(photo.file_path, 60);
-          if (error) console.error(error);
-          return { ...photo, url: urlData?.signedUrl };
-        })
-      );
-      setPhotos(photosWithUrl);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to load photos.");
+      return;
     }
+
+    const photosWithUrl = await Promise.all(
+      (data ?? []).map(async (photo: Photo) => {
+        const { data: urlData, error: urlError } = await supabase.storage
+          .from("photos")
+          .createSignedUrl(photo.file_path, 60);
+
+        if (urlError) console.error(urlError);
+
+        return { ...photo, url: urlData?.signedUrl };
+      })
+    );
+
+    setPhotos(photosWithUrl);
   };
 
   const uploadPhoto = async () => {
-    if (!file || !photoName.trim()) return;
+    if (!file || !photoName.trim()) {
+      toast.error("Pick a file and name it before uploading.");
+      return;
+    }
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to upload photos.");
+      return;
+    }
 
     const filePath = `${user.id}/${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from("photos")
       .upload(filePath, file, { upsert: true });
-    if (uploadError) return console.error(uploadError);
+    if (uploadError) {
+      console.error(uploadError);
+      toast.error("Upload failed.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("photos")
@@ -86,7 +107,11 @@ export default function PhotosPage() {
       .select()
       .single();
 
-    if (error) return console.error(error);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to save photo.");
+      return;
+    }
 
     const { data: urlData, error: urlError } = await supabase.storage
       .from("photos")
@@ -96,21 +121,31 @@ export default function PhotosPage() {
     setPhotos((prev) => [{ ...data, url: urlData?.signedUrl }, ...prev]);
     setFile(() => null);
     setPhotoName("");
+    toast.success("Photo uploaded.");
   };
 
   const deletePhoto = async (photo: Photo) => {
     const { error: storageError } = await supabase.storage
       .from("photos")
       .remove([photo.file_path]);
-    if (storageError) console.error(storageError);
+    if (storageError) {
+      console.error(storageError);
+      toast.error("Failed to delete file.");
+      return;
+    }
 
     const { error: tableError } = await supabase
       .from("photos")
       .delete()
       .eq("id", photo.id);
-    if (tableError) console.error(tableError);
+    if (tableError) {
+      console.error(tableError);
+      toast.error("Failed to delete record.");
+      return;
+    }
 
     setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+    toast.success("Photo deleted.");
   };
 
   const startEditing = (photo: Photo) => {
@@ -123,13 +158,18 @@ export default function PhotosPage() {
       .from("photos")
       .update({ name: editingText })
       .eq("id", photo.id);
-    if (error) console.error(error);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to rename photo.");
+      return;
+    }
 
     setPhotos((prev) =>
       prev.map((p) => (p.id === photo.id ? { ...p, name: editingText } : p))
     );
     setEditingId(null);
     setEditingText("");
+    toast.success("Photo renamed.");
   };
 
   const filteredPhotos = photos

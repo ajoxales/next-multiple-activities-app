@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu } from "@radix-ui/react-dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createClient } from "@/lib/supabase/client";
 
 interface Todo {
   id: string;
@@ -29,53 +30,74 @@ export default function TodosPage() {
   const supabase = createClient();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingPriority, setEditingPriority] = useState("");
   const [priority, setPriority] = useState("low");
 
   useEffect(() => {
-    fetchTodos();
+    const loadUserAndTodos = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error || !data.user) {
+        toast.error("Please sign in to manage todos.");
+        return;
+      }
+
+      setUserId(data.user.id);
+      await fetchTodos(data.user.id);
+    };
+
+    loadUserAndTodos();
   }, []);
 
-  const fetchTodos = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return;
-
+  const fetchTodos = async (currentUserId: string) => {
     const { data, error } = await supabase
       .from("todos")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", currentUserId)
       .order("created_at");
 
-    if (error) console.log(error);
-    else setTodos(data);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to load todos.");
+      return;
+    }
+
+    setTodos(data ?? []);
   };
 
   const addTodo = async () => {
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      toast.error("Please enter a todo title.");
+      return;
+    }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    if (!userId) {
+      toast.error("You must be signed in to add todos.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("todos")
       .insert({
         title,
-        user_id: user?.id,
-        priority: priority,
+        user_id: userId,
+        priority,
       })
       .select()
       .single();
 
-    if (error) console.error(error);
+    if (error || !data) {
+      console.error(error);
+      toast.error("Failed to add todo.");
+      return;
+    }
 
     setTodos((prev) => [...prev, data]);
     setTitle("");
+    toast.success("Todo added.");
   };
 
   const toggleTodo = async (id: string, completed: boolean) => {
@@ -84,7 +106,11 @@ export default function TodosPage() {
       .update({ completed: !completed })
       .eq("id", id);
 
-    if (error) console.error(error);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to update todo.");
+      return;
+    }
 
     setTodos((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: !completed } : t))
@@ -94,7 +120,7 @@ export default function TodosPage() {
   const startEditing = (todo: Todo) => {
     setEditingId(todo.id);
     setEditingText(todo.title);
-    setEditingPriority(todo.priority);
+    setEditingPriority(todo.priority || "low");
   };
 
   const saveEdit = async (id: string) => {
@@ -103,7 +129,11 @@ export default function TodosPage() {
       .update({ title: editingText, priority: editingPriority })
       .eq("id", id);
 
-    if (error) console.error(error);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to save changes.");
+      return;
+    }
 
     setTodos((prev) =>
       prev.map((t) =>
@@ -116,14 +146,20 @@ export default function TodosPage() {
     setEditingId(null);
     setEditingText("");
     setEditingPriority("");
+    toast.success("Todo updated.");
   };
 
   const deleteTodo = async (id: string) => {
     const { error } = await supabase.from("todos").delete().eq("id", id);
 
-    if (error) console.error(error);
+    if (error) {
+      console.error(error);
+      toast.error("Failed to delete todo.");
+      return;
+    }
 
     setTodos((prev) => prev.filter((t) => t.id !== id));
+    toast.success("Todo deleted.");
   };
 
   return (
@@ -136,7 +172,7 @@ export default function TodosPage() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <Select onValueChange={(value) => setPriority(value)}>
+        <Select value={priority} onValueChange={(value) => setPriority(value)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a priority" />
           </SelectTrigger>
@@ -152,65 +188,71 @@ export default function TodosPage() {
         <Button onClick={addTodo}>Add</Button>
       </div>
 
-      <ul className="space-y-2">
-        {todos.map((todo) => (
-          <li key={todo.id} className="flex items-center gap-2">
-            <Checkbox
-              checked={todo.completed}
-              onCheckedChange={() => toggleTodo(todo.id, todo.completed)}
-            />
+      {todos.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No todos yet. Add one to get started.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {todos.map((todo) => (
+            <li key={todo.id} className="flex items-center gap-2">
+              <Checkbox
+                checked={todo.completed}
+                onCheckedChange={() => toggleTodo(todo.id, todo.completed)}
+              />
 
-            {editingId === todo.id ? (
-              <div className="flex-1 flex items-center gap-2">
-                <Input
-                  value={editingText}
-                  onChange={(e) => setEditingText(e.target.value)}
-                  className="flex-1"
-                />
-                <Select
-                  value={editingPriority}
-                  onValueChange={(value) => setEditingPriority(value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select a priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Priority</SelectLabel>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <Button onClick={() => saveEdit(todo.id)}>Save</Button>
-              </div>
-            ) : (
-              <div className="flex-1 flex justify-between items-center">
-                <span
-                  className={`${todo.completed ? "line-through" : ""} flex-1`}
-                >
-                  {todo.title}
-                </span>
-                <span className="mx-5 inline-flex items-center px-3 py-0.5 rounded-full bg-gray-200 text-xs font-medium uppercase">
-                  {todo.priority}
-                </span>
-                <div>
-                  <Button onClick={() => startEditing(todo)} className="mr-2">
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => deleteTodo(todo.id)}
+              {editingId === todo.id ? (
+                <div className="flex-1 flex items-center gap-2">
+                  <Input
+                    value={editingText}
+                    onChange={(e) => setEditingText(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select
+                    value={editingPriority}
+                    onValueChange={(value) => setEditingPriority(value)}
                   >
-                    Delete
-                  </Button>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select a priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Priority</SelectLabel>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={() => saveEdit(todo.id)}>Save</Button>
                 </div>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+              ) : (
+                <div className="flex-1 flex justify-between items-center">
+                  <span
+                    className={`${todo.completed ? "line-through" : ""} flex-1`}
+                  >
+                    {todo.title}
+                  </span>
+                  <span className="mx-5 inline-flex items-center px-3 py-0.5 rounded-full bg-gray-200 text-xs font-medium uppercase">
+                    {todo.priority}
+                  </span>
+                  <div>
+                    <Button onClick={() => startEditing(todo)} className="mr-2">
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => deleteTodo(todo.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import ReactMarkdown from "react-markdown";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 interface Note {
   id: string;
@@ -35,18 +37,25 @@ export default function NotesPage() {
       .order("created_at", { ascending: false });
     if (error) {
       console.error("Error fetching notes:", error);
+      toast.error("Failed to load notes.");
       return;
     }
-    setNotes(data);
+    setNotes(data ?? []);
   };
 
   const addNote = async () => {
-    if (!title.trim() || !content.trim()) return;
+    if (!title.trim() || !content.trim()) {
+      toast.error("Title and content are required.");
+      return;
+    }
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to add notes.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("notes")
@@ -60,12 +69,14 @@ export default function NotesPage() {
 
     if (error) {
       console.error("Add note error:", error);
+      toast.error("Failed to save note.");
       return;
     }
 
     setNotes((prev) => [data, ...prev]);
     setTitle("");
     setContent("");
+    toast.success("Note added.");
   };
 
   const startEdit = (note: Note) => {
@@ -85,6 +96,7 @@ export default function NotesPage() {
 
     if (error) {
       console.error("Update note error:", error);
+      toast.error("Failed to update note.");
       return;
     }
 
@@ -98,15 +110,18 @@ export default function NotesPage() {
     setEditingId(null);
     setEditingTitle("");
     setEditingContent("");
+    toast.success("Note updated.");
   };
 
   const deleteNote = async (id: string) => {
     const { error } = await supabase.from("notes").delete().eq("id", id);
     if (error) {
       console.error("Delete note error:", error);
+      toast.error("Failed to delete note.");
       return;
     }
     setNotes((prev) => prev.filter((n) => n.id !== id));
+    toast.success("Note deleted.");
   };
 
   return (

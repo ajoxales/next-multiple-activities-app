@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
+
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,12 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { createClient } from "@/lib/supabase/client";
 
 interface Pokemon {
   id: string;
@@ -64,6 +66,7 @@ export default function PokemonPage() {
 
     if (pokemonError) {
       console.error("Error fetching Pokemon:", pokemonError);
+      toast.error("Failed to load Pokemon.");
       return;
     }
 
@@ -76,6 +79,7 @@ export default function PokemonPage() {
 
     if (profileError) {
       console.error("Error fetching profiles:", profileError);
+      toast.error("Some uploader info could not load.");
     }
 
     const mapped = pokemonsData.map((p: any) => ({
@@ -97,6 +101,7 @@ export default function PokemonPage() {
 
     if (error) {
       console.error("Error fetching reviews:", error);
+      toast.error("Failed to load reviews.");
       return;
     }
 
@@ -109,6 +114,7 @@ export default function PokemonPage() {
 
     if (profileError) {
       console.error("Error fetching profiles for reviews:", profileError);
+      toast.error("Some reviewer info could not load.");
     }
 
     const mapped = reviewsData.map((r: any) => ({
@@ -127,11 +133,17 @@ export default function PokemonPage() {
   };
 
   const uploadPokemon = async () => {
-    if (!uploadFile || !pokemonName.trim()) return;
+    if (!uploadFile || !pokemonName.trim()) {
+      toast.error("Pick an image and enter a name.");
+      return;
+    }
 
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to upload Pokemon.");
+      return;
+    }
 
     const filePath = `pokemon/${user.id}/${uploadFile.name}`;
     const { error: uploadError } = await supabase.storage
@@ -139,6 +151,7 @@ export default function PokemonPage() {
       .upload(filePath, uploadFile, { upsert: true });
     if (uploadError) {
       console.error("Upload error:", uploadError);
+      toast.error("Upload failed.");
       return;
     }
 
@@ -154,20 +167,33 @@ export default function PokemonPage() {
 
     if (error) {
       console.error("Insert Pokemon error:", error);
+      toast.error("Failed to save Pokemon.");
       return;
     }
 
     setPokemons((prev) => [{ ...data, uploaderEmail: user.email }, ...prev]);
     setUploadFile(null);
     setPokemonName("");
+    toast.success("Pokemon uploaded.");
   };
 
   const addReview = async () => {
-    if (!newReview.trim() || !selectedPokemon) return;
+    if (!newReview.trim()) {
+      toast.error("Review cannot be empty.");
+      return;
+    }
+
+    if (!selectedPokemon) {
+      toast.error("Select a Pokemon first.");
+      return;
+    }
 
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to add a review.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("pokemon_reviews")
@@ -181,11 +207,13 @@ export default function PokemonPage() {
 
     if (error) {
       console.error("Add review error:", error);
+      toast.error("Failed to add review.");
       return;
     }
 
     setReviews((prev) => [{ ...data, userEmail: user.email }, ...prev]);
     setNewReview("");
+    toast.success("Review added.");
   };
 
   const startEditReview = (review: Review) => {
@@ -201,6 +229,7 @@ export default function PokemonPage() {
 
     if (error) {
       console.error("Update review error:", error);
+      toast.error("Failed to update review.");
       return;
     }
 
@@ -212,6 +241,7 @@ export default function PokemonPage() {
 
     setEditingReviewId(null);
     setEditingReviewText("");
+    toast.success("Review updated.");
   };
 
   const deleteReview = async (review: Review) => {
@@ -222,10 +252,12 @@ export default function PokemonPage() {
 
     if (error) {
       console.error("Delete review error:", error);
+      toast.error("Failed to delete review.");
       return;
     }
 
     setReviews((prev) => prev.filter((r) => r.id !== review.id));
+    toast.success("Review deleted.");
   };
 
   const filteredPokemons = pokemons

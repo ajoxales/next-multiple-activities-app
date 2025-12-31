@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { RegisterForm } from "@/components/register-form";
+import { toast } from "react-toastify";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,11 +20,13 @@ export default function RegisterPage() {
       password,
     });
 
-    console.log("Sign up data:", data);
-
     if (error) {
       setMessage(error.message);
+      toast.error("Registration failed: " + error.message);
     } else {
+      toast.success(
+        "Registration successful! Please check your email to verify your account."
+      );
       router.push("/");
     }
   };
